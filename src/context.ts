@@ -10,8 +10,9 @@ export class Context {
 
   private instanceMap: Map<NoArgConstructor, any> = new Map();
   private subClassMap: Map<NoArgConstructor, Array<NoArgConstructor>> = new Map();
+  private origin?: Context;
 
-  constructor(factories: NoArgConstructor[]) {
+  private constructor(factories: NoArgConstructor[]) {
     factories.forEach(factory => {
       this.instanceMap.set(factory, null);
       this.buildSubClassMap(factory);
@@ -19,39 +20,30 @@ export class Context {
   }
 
   public get<T>(constructor: Constructor<T>): T {
-    this.validate(constructor);
-
-    const instances = this.getForByParentClass(constructor);
-    if (instances.length == 1) return instances[0];
+    const instances = this.getAllInstances(constructor);
+    if (instances.length === 1) return instances[0];
     if (instances.length > 1)
       throw new IOCException(`There are ${instances.length} instances found by ${constructor.name}`);
-
-    return this.getOrInit(constructor);
+    if (instances.length === 0)
+      throw new IOCException(`${constructor.name} is not registered !!!`);
   }
 
-  public getAll(constructor: NoArgConstructor): any[] {
-    this.validate(constructor);
-    const instances = this.getForByParentClass(constructor);
-    const instance = this.getOrInit(constructor);
-    if (instance) instances.push(instances);
+  public getAll<T>(constructor: Constructor<T>): T[] {
+    const instances = this.getAllInstances(constructor);
+    if (instances.length === 0 && this.origin) instances.push(...this.origin.getAll(constructor));
+    if (instances.length === 0) throw new IOCException(`${constructor.name} is not registered !!!`);
     return instances;
   }
 
-  private validate(constructor: NoArgConstructor) {
-    if (!this.subClassMap.has(constructor) && !this.instanceMap.has(constructor)) {
-      throw new IOCException(`${constructor.name} is not registered !!!`);
-    }
+  public setOrigin(context: Context): void {
+    this.origin = context;
   }
 
-  public getExisted<T>(constructor: Constructor<T>): T {
-    const [instance] = this.instanceMap.get(constructor);
-    return instance;
-  }
-
-  private getOrInit<T>(constructor: Constructor<T>): T {
-    if (this.instanceMap.has(constructor)) {
-      return this.instanceMap.get(constructor) || this.inject(constructor);
-    }
+  private getAllInstances<T>(constructor: Constructor<T>): T[] {
+    const instances = this.getForByParentClass(constructor);
+    const instance = this.getOrInit(constructor);
+    if (instance) instances.push(instance);
+    return instances;
   }
 
   private inject<T>(constructor: Constructor<T>): T {
@@ -67,11 +59,17 @@ export class Context {
     return this.instanceMap.get(constructor);
   }
 
-  private getForByParentClass(factory: NoArgConstructor): null | any[] {
+  private getForByParentClass<T>(factory: Constructor<T>): T[] {
     const hasSubClass = this.subClassMap.has(factory);
     if (!hasSubClass) return [];
     return this.subClassMap.get(factory)
       .map(subClass => this.getOrInit(subClass));
+  }
+
+  private getOrInit<T>(constructor: Constructor<T>): T {
+    if (this.instanceMap.has(constructor)) {
+      return this.instanceMap.get(constructor) || this.inject(constructor);
+    }
   }
 
   private buildSubClassMap(factory: NoArgConstructor) {
