@@ -1,0 +1,1 @@
+export class IOCException extends Error {}
