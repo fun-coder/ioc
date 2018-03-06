@@ -22,15 +22,14 @@ export class Context {
   public get<T>(constructor: Constructor<T>): T {
     const instances = this.getAllInstances(constructor);
     if (instances.length === 1) return instances[0];
-    if (instances.length > 1)
-      throw new IOCException(`There are ${instances.length} instances found by ${constructor.name}`);
-    if (instances.length === 0)
-      throw new IOCException(`${constructor.name} is not registered !!!`);
+    const message = instances.length > 1
+      ? `There are ${instances.length} instances found by ${constructor.name}`
+      : `${constructor.name} is not registered !!!`;
+    throw new IOCException(message);
   }
 
   public getAll<T>(constructor: Constructor<T>): T[] {
     const instances = this.getAllInstances(constructor);
-    if (instances.length === 0 && this.origin) instances.push(...this.origin.getAll(constructor));
     if (instances.length === 0) throw new IOCException(`${constructor.name} is not registered !!!`);
     return instances;
   }
@@ -40,10 +39,10 @@ export class Context {
   }
 
   private getAllInstances<T>(constructor: Constructor<T>): T[] {
-    const instances = this.getForByParentClass(constructor);
-    const instance = this.getOrInit(constructor);
-    if (instance) instances.push(instance);
-    return instances;
+    return this.getAllTypes(constructor)
+      .filter(type => this.instanceMap.has(type))
+      .map(type => this.getOfSelf(type))
+      .concat(this.origin ? this.origin.getAllInstances(constructor) : []);
   }
 
   private inject<T>(constructor: Constructor<T>): T {
@@ -59,17 +58,14 @@ export class Context {
     return this.instanceMap.get(constructor);
   }
 
-  private getForByParentClass<T>(factory: Constructor<T>): T[] {
-    const hasSubClass = this.subClassMap.has(factory);
-    if (!hasSubClass) return [];
-    return this.subClassMap.get(factory)
-      .map(subClass => this.getOrInit(subClass));
+  private getAllTypes(factory: NoArgConstructor): NoArgConstructor[] {
+    const subclasses = this.subClassMap.get(factory) || [];
+    return subclasses.reduce((classes, subclass) => classes.concat(this.getAllTypes(subclass)), [factory]);
   }
 
-  private getOrInit<T>(constructor: Constructor<T>): T {
-    if (this.instanceMap.has(constructor)) {
-      return this.instanceMap.get(constructor) || this.inject(constructor);
-    }
+  public getOfSelf<T>(constructor: Constructor<T>): T | null {
+    if (!this.instanceMap.has(constructor)) return null;
+    return this.instanceMap.get(constructor) || this.inject(constructor);
   }
 
   private buildSubClassMap(factory: NoArgConstructor) {

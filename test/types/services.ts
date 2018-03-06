@@ -43,7 +43,7 @@ export class BaseServiceD {
 
 export class ServiceD extends BaseServiceD {
   @injected()
-  serviceC: ServiceC;
+  serviceC: ServiceA;
 }
 
 export class ServiceD2 extends BaseServiceD {
