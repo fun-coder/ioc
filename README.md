@@ -1,7 +1,7 @@
 serializable  
 ---
 
-[![Build Status](https://travis-ci.org/fun-coder/serializable.svg?branch=master)](https://travis-ci.org/fun-coder/serializable)
+[![Build Status](https://travis-ci.org/fun-coder/ioc.svg?branch=master)](https://travis-ci.org/fun-coder/ioc)
 
 Basic serialize
 
