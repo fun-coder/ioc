@@ -1,29 +1,27 @@
-serializable  
+IOC Container  
 ---
 
 [![Build Status](https://travis-ci.org/fun-coder/ioc.svg?branch=master)](https://travis-ci.org/fun-coder/ioc)
 
-Basic serialize
+Create the context
 
 ```typescript
-import { json, serializable } from "serializable";
+import { injected, Context } from '@fun-coder/ioc';
 
-@serializable
-export class User {
-  public static serialize: (json: any) => User;
-  public deserialize: () => Map<String, any>;
-
-  @json('user_name')
-  public userName: string;
-
-  @json()
-  public age: number;
+class ServiceA {
+  name: string;
+  hello() {
+    console.log(123);
+  }
 }
 
+class ServiceB {
+  @injected()
+  serviceA: ServiceA;
+}
 
-const user = User.serialize({user_name: 'Hello world', age: 10})
+const context = Context.create(ServiceA, ServiceB);
 
-user.userName // =>  'Hello world';
-user.age // =>  10;
-
+const serviceA = context.get(ServiceA);
+const serviceB = context.get(ServiceB);
 ```
