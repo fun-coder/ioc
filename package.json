@@ -1,6 +1,6 @@
 {
   "name": "@fun-coder/ioc",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Inversion of control",
   "main": "index.js",
   "scripts": {

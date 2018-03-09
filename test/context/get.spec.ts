@@ -7,7 +7,6 @@ import {
 import { Context } from "../../index";
 
 describe('Context::get', () => {
-
   const ctx = Context.create(ServiceA, ServiceB, ServiceB2, ServiceC, ServiceD, ServiceD2);
 
   it('should return the instance of given constructor', () => {

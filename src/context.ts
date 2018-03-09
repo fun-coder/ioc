@@ -4,7 +4,7 @@ import { Constructor, getParentClass, NoArgConstructor } from "./utils";
 
 export class Context {
 
-  public static create(...factories) {
+  public static create(...factories: NoArgConstructor[]) {
     return new Context(factories);
   }
 
@@ -21,11 +21,26 @@ export class Context {
 
   public get<T>(constructor: Constructor<T>): T {
     const instances = this.getAllInstances(constructor);
-    if (instances.length === 1) return instances[0];
-    const message = instances.length > 1
-      ? `There are ${instances.length} instances found by ${constructor.name}`
-      : `${constructor.name} is not registered !!!`;
-    throw new IOCException(message);
+    this.checkForOnInstance(instances, constructor);
+    return instances[0];
+  }
+
+  public newInstance<T>(constructor: Constructor<T>): T {
+    const types = this.getAllTypes(constructor)
+      .filter(type => this.instanceMap.has(type))
+      .concat(this.origin ? this.origin.getAllTypes(constructor) : []);
+    this.checkForOnInstance(types, constructor);
+    return this.generateInstance(types[0]);
+  }
+
+  private generateInstance<T>(constructor: Constructor<T>): T {
+    const instance = new constructor();
+    getAllInjections(constructor).forEach(prop => {
+      const type = Reflect.getMetadata('design:type', constructor.prototype, prop);
+      const dependency = this.get(type);
+      Object.defineProperty(instance, prop, { value: dependency });
+    });
+    return instance;
   }
 
   public getAll<T>(constructor: Constructor<T>): T[] {
@@ -46,16 +61,9 @@ export class Context {
   }
 
   private inject<T>(constructor: Constructor<T>): T {
-    const instance = new constructor();
+    const instance = this.generateInstance(constructor);
     this.instanceMap.set(constructor, instance);
-
-    getAllInjections(constructor).forEach(prop => {
-      const type = Reflect.getMetadata('design:type', constructor.prototype, prop);
-      const dependency = this.get(type);
-      Object.defineProperty(instance, prop, { value: dependency });
-    });
-
-    return this.instanceMap.get(constructor);
+    return instance;
   }
 
   private getAllTypes(factory: NoArgConstructor): NoArgConstructor[] {
@@ -81,5 +89,13 @@ export class Context {
       this.subClassMap.set(parentClass, []);
     }
     return this.subClassMap.get(parentClass);
+  }
+
+  private checkForOnInstance(instances: any[], constructor: NoArgConstructor) {
+    if (instances.length > 1) {
+      throw new IOCException(`There are ${instances.length} instances found by ${constructor.name}`);
+    } else if (instances.length == 0) {
+      throw new IOCException(`${constructor.name} is not registered !!!`);
+    }
   }
 }
