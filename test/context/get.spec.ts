@@ -5,6 +5,7 @@ import {
   ServiceD2
 } from '../types/services';
 import { Context } from "../../index";
+import { Constructor } from "../../src/utils";
 
 describe('Context::get', () => {
   const ctx = Context.create(ServiceA, ServiceB, ServiceB2, ServiceC, ServiceD, ServiceD2);

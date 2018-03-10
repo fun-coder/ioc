@@ -1,35 +1,33 @@
 import { getAllInjections } from "./injected";
 import { IOCException } from "./ioc-exception";
-import { Constructor, getParentClass, NoArgConstructor } from "./utils";
+import { Constructor, IOCFactory } from "./utils";
+import { buildSubclassMap } from "./build-subclass-map";
 
 export class Context {
 
-  public static create(...factories: NoArgConstructor[]) {
+  public static create(...factories: Constructor<any>[]) {
     return new Context(factories);
   }
 
-  private instanceMap: Map<NoArgConstructor, any> = new Map();
-  private subClassMap: Map<NoArgConstructor, Array<NoArgConstructor>> = new Map();
+  private instanceMap: Map<Constructor<any>, any> = new Map();
+  private subClassMap: Map<IOCFactory<any>, Array<IOCFactory<any>>> = new Map();
   private origin?: Context;
 
-  private constructor(factories: NoArgConstructor[]) {
-    factories.forEach(factory => {
-      this.instanceMap.set(factory, null);
-      this.buildSubClassMap(factory);
-    });
+  private constructor(factories: Constructor<any>[]) {
+    this.instanceMap = factories.reduce((map, factory) => map.set(factory, null), new Map());
+    this.subClassMap = buildSubclassMap(factories);
   }
 
-  public get<T>(constructor: Constructor<T>): T {
+  public get<T>(constructor: IOCFactory<T>): T {
     const instances = this.getAllInstances(constructor);
-    this.checkForOnInstance(instances, constructor);
+    Context.checkForOne(instances, constructor);
     return instances[0];
   }
 
-  public newInstance<T>(constructor: Constructor<T>): T {
-    const types = this.getAllTypes(constructor)
-      .filter(type => this.instanceMap.has(type))
-      .concat(this.origin ? this.origin.getAllTypes(constructor) : []);
-    this.checkForOnInstance(types, constructor);
+  public newInstance<T>(constructor: IOCFactory<T>): T {
+    const types = this.getFactories(constructor)
+      .concat(this.origin ? this.origin.getFactories(constructor) : []);
+    Context.checkForOne(types, constructor);
     return this.generateInstance(types[0]);
   }
 
@@ -43,7 +41,7 @@ export class Context {
     return instance;
   }
 
-  public getAll<T>(constructor: Constructor<T>): T[] {
+  public getAll<T>(constructor: IOCFactory<T>): T[] {
     const instances = this.getAllInstances(constructor);
     if (instances.length === 0) throw new IOCException(`${constructor.name} is not registered !!!`);
     return instances;
@@ -53,9 +51,8 @@ export class Context {
     this.origin = context;
   }
 
-  private getAllInstances<T>(constructor: Constructor<T>): T[] {
-    return this.getAllTypes(constructor)
-      .filter(type => this.instanceMap.has(type))
+  private getAllInstances<T>(constructor: IOCFactory<T>): T[] {
+    return this.getFactories(constructor)
       .map(type => this.getOfSelf(type))
       .concat(this.origin ? this.origin.getAllInstances(constructor) : []);
   }
@@ -66,9 +63,14 @@ export class Context {
     return instance;
   }
 
-  private getAllTypes(factory: NoArgConstructor): NoArgConstructor[] {
+  private getAllTypes<T>(factory: IOCFactory<T>): IOCFactory<T>[] {
     const subclasses = this.subClassMap.get(factory) || [];
     return subclasses.reduce((classes, subclass) => classes.concat(this.getAllTypes(subclass)), [factory]);
+  }
+
+  private getFactories<T>(factory: IOCFactory<T>): Constructor<T>[] {
+    return <Constructor<T>[]> this.getAllTypes(factory)
+      .filter(type => this.instanceMap.has(<Constructor<T>>type))
   }
 
   public getOfSelf<T>(constructor: Constructor<T>): T | null {
@@ -76,25 +78,10 @@ export class Context {
     return this.instanceMap.get(constructor) || this.inject(constructor);
   }
 
-  private buildSubClassMap(factory: NoArgConstructor) {
-    const parentConstructor = getParentClass(factory);
-    if (parentConstructor !== Object) {
-      this.getSubClasses(parentConstructor).push(factory);
-      this.buildSubClassMap(parentConstructor);
-    }
-  }
-
-  private getSubClasses(parentClass: NoArgConstructor): NoArgConstructor[] {
-    if (!this.subClassMap.has(parentClass)) {
-      this.subClassMap.set(parentClass, []);
-    }
-    return this.subClassMap.get(parentClass);
-  }
-
-  private checkForOnInstance(instances: any[], constructor: NoArgConstructor) {
-    if (instances.length > 1) {
-      throw new IOCException(`There are ${instances.length} instances found by ${constructor.name}`);
-    } else if (instances.length == 0) {
+  private static checkForOne(list: any[], constructor: IOCFactory<any>): void {
+    if (list.length > 1) {
+      throw new IOCException(`There are ${list.length} instances found by ${constructor.name}`);
+    } else if (list.length == 0) {
       throw new IOCException(`${constructor.name} is not registered !!!`);
     }
   }

@@ -2,6 +2,7 @@ import { injected } from "../../index";
 
 export class ServiceA {
   name: string;
+
   hello() {
     console.log(123);
   }
@@ -18,7 +19,7 @@ export class ServiceB2 {
 }
 
 
-export class BaseServiceC {
+export abstract class BaseServiceC {
   @injected()
   public serviceA: ServiceA;
 
@@ -51,7 +52,7 @@ export class ServiceD2 extends BaseServiceD {
   serviceB: ServiceB;
 }
 
-export class NotInjectedClass{
+export class NotInjectedClass {
   @injected()
   serviceA: ServiceA;
 }

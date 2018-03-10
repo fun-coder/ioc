@@ -1,7 +1,9 @@
-export type Constructor<T> = { new(): T };
-export type NoArgConstructor = { new() };
-
-export const getParentClass = (constructor: NoArgConstructor): NoArgConstructor => constructor.prototype.__proto__.constructor;
+export interface Constructor<T> extends Function {
+  new (): T;
+}
+export type AbstractConstructor<T> = Function & { prototype: T }
+export type IOCFactory<T> = Constructor<T> | AbstractConstructor<T>;
+export const getParentClass = (constructor: Constructor<any>): Constructor<any> => constructor.prototype.__proto__.constructor;
 
 export const getAttachedKeys = key => target => {
   if (!target[key]) {
