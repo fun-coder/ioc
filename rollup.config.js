@@ -1,11 +1,8 @@
 import typescript from 'rollup-plugin-typescript2';
-import uglify from 'rollup-plugin-uglify';
-import polyfillPlugin from 'rollup-plugin-polyfill';
-
-const polyfill = polyfillPlugin('./index.ts', ['./node_modules/reflect-metadata/Reflect.js']);
+import resolve from 'rollup-plugin-node-resolve';
 
 export default {
-  entry: './index.ts',
+  input: `${__dirname}/main.ts`,
 
   output: {
     name: 'ioc',
@@ -14,6 +11,6 @@ export default {
   },
   plugins: [
     typescript(),
-    polyfill,
-  ]
-}
+    resolve(),
+  ],
+};

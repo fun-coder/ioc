@@ -13,7 +13,7 @@ export class Context {
   private subClassMap: Map<IOCFactory<any>, Array<IOCFactory<any>>> = new Map();
   private origin?: Context;
 
-  private constructor(factories: Constructor<any>[]) {
+  constructor(factories: Constructor<any>[]) {
     this.instanceMap = factories.reduce((map, factory) => map.set(factory, null), new Map());
     this.subClassMap = buildSubclassMap(factories);
   }
@@ -73,7 +73,7 @@ export class Context {
       .filter(type => this.instanceMap.has(<Constructor<T>>type))
   }
 
-  public getOfSelf<T>(constructor: Constructor<T>): T | null {
+  private getOfSelf<T>(constructor: Constructor<T>): T | null {
     if (!this.instanceMap.has(constructor)) return null;
     return this.instanceMap.get(constructor) || this.inject(constructor);
   }
