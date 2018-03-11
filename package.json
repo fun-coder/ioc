@@ -1,11 +1,11 @@
 {
   "name": "@fun-coder/ioc",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Inversion of control",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require ts-node/register ./test/{,/**/}*.spec.ts",
-    "build": "webpack --config ./webpack.config.js"
+    "build": "rollup -c ./rollup.config.js"
   },
   "repository": {
     "type": "git",
@@ -28,9 +28,7 @@
     "rollup-plugin-uglify": "^3.0.0",
     "ts-loader": "^4.0.1",
     "ts-node": "^5.0.0",
-    "typescript": "^2.7.2",
-    "webpack": "^4.1.1",
-    "webpack-cli": "^2.0.11"
+    "typescript": "^2.7.2"
   },
   "dependencies": {
     "reflect-metadata": "^0.1.12"

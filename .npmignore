@@ -1,5 +1,5 @@
 tsconfig.json
-webpack.config.js
 test
 node_modules
 .rpt2_cache
+.idea
